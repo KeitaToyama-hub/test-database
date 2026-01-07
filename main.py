@@ -47,7 +47,7 @@ async def upload_file(
     c.execute('''
         INSERT INTO marketplace_data (filename, attributes, file_data)
         VALUES (?, ?, ?)
-    ''', (file.filename, attributes, sqlite3.Binary(file_content))))
+    ''', (file.filename, attributes, sqlite3.Binary(file_content)))
     conn.commit()
     new_id = c.lastrowid
     conn.close()
