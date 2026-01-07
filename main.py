@@ -47,7 +47,7 @@ async def upload_file(
     c.execute('''
         INSERT INTO marketplace_data (filename, attributes, file_data)
         VALUES (?, ?, ?)
-    ''', (file.filename, attributes, file_content))
+    ''', (file.filename, attributes, sqlite3.Binary(file_content))))
     conn.commit()
     new_id = c.lastrowid
     conn.close()
@@ -70,11 +70,11 @@ def download_file(data_id: int):
     # ファイル名を URL エンコードして安全に
     safe_filename = urllib.parse.quote(filename)
 
-    return StreamingResponse(
-        BytesIO(file_data),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{safe_filename}"})
-    
+return StreamingResponse(
+    BytesIO(file_data),
+    media_type="application/octet-stream",
+    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"})
+
 # 属性一覧取得
 @app.get("/attributes/{data_id}")
 def get_attributes(data_id: int):
