@@ -1,10 +1,20 @@
 from fastapi import FastAPI, UploadFile, File, Form
-from pydantic import BaseModel
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
-import json
+import os
+from io import BytesIO
 
 app = FastAPI()
 DB_FILE = "data.db"
+
+# CORS 設定（任意）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # DB初期化
 def init_db():
@@ -42,6 +52,7 @@ async def upload_file(
     conn.close()
     return {"id": new_id, "message": "File uploaded successfully"}
 
+# ファイルダウンロード
 @app.get("/download/{data_id}")
 def download_file(data_id: int):
     conn = sqlite3.connect(DB_FILE)
@@ -50,12 +61,10 @@ def download_file(data_id: int):
     row = c.fetchone()
     conn.close()
     if not row:
-        return {"error": "File not found"}
+        return JSONResponse(status_code=404, content={"error": "File not found"})
     filename, file_data = row
-    return {
-        "filename": filename,
-        "file_data": file_data
-    }
+    return StreamingResponse(BytesIO(file_data), media_type="application/octet-stream",
+                             headers={"Content-Disposition": f"attachment; filename={filename}"})
 
 # 属性一覧取得
 @app.get("/attributes/{data_id}")
@@ -66,8 +75,8 @@ def get_attributes(data_id: int):
     row = c.fetchone()
     conn.close()
     if not row:
-        return {"error": "Data not found"}
-    return row[0]
+        return JSONResponse(status_code=404, content={"error": "Data not found"})
+    return JSONResponse(content={"attributes": row[0]})
 
 # ファイル一覧取得
 @app.get("/files/")
@@ -77,8 +86,10 @@ def list_files():
     c.execute("SELECT id, filename, upload_time FROM marketplace_data ORDER BY upload_time DESC")
     rows = c.fetchall()
     conn.close()
-    # リストを辞書形式で返す
     return [{"id": r[0], "filename": r[1], "upload_time": r[2]} for r in rows]
 
-#uvicorn database:app --reload
-#http://127.0.0.1:8000/docs
+# Railway / Heroku 用に PORT を環境変数から取得
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
