@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import os
 from io import BytesIO
+import urllib.parse
 
 app = FastAPI()
 DB_FILE = "data.db"
@@ -60,12 +61,20 @@ def download_file(data_id: int):
     c.execute("SELECT filename, file_data FROM marketplace_data WHERE id=?", (data_id,))
     row = c.fetchone()
     conn.close()
+
     if not row:
         return JSONResponse(status_code=404, content={"error": "File not found"})
-    filename, file_data = row
-    return StreamingResponse(BytesIO(file_data), media_type="application/octet-stream",
-                             headers={"Content-Disposition": f"attachment; filename={filename}"})
 
+    filename, file_data = row
+
+    # ファイル名を URL エンコードして安全に
+    safe_filename = urllib.parse.quote(filename)
+
+    return StreamingResponse(
+        BytesIO(file_data),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{safe_filename}"})
+    
 # 属性一覧取得
 @app.get("/attributes/{data_id}")
 def get_attributes(data_id: int):
