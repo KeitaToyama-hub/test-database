@@ -54,36 +54,24 @@ async def upload_file(
     return {"id": new_id, "message": "File uploaded successfully"}
 
 # ファイルダウンロード
-@app.get("/download/{data_id}")
-def download_file(data_id: int):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute(
-        "SELECT filename, file_data FROM marketplace_data WHERE id=?",
-        (data_id,)
-    )
-    row = c.fetchone()
-    conn.close()
+def download_file(line):
+    """
+    %download_file <data_id> <output_path>
+    """
+    try:
+        data_id, output_path = line.split()
+    except ValueError:
+        print("Usage: %download_file <data_id> <output_path>")
+        return
+    r = requests.get(f"{API_URL}/download/{data_id}")
+    if "error" in r.json():
+        print(r.json())
+        return
+    file_data = bytes.fromhex(r.json()["file_data"])
+    with open(output_path, "wb") as f:
+        f.write(file_data)
+    print(f"Saved to {output_path}")
 
-    if not row:
-        raise HTTPException(status_code=404, detail="File not found")
-
-    filename, file_data = row
-
-    # SQLite BLOB 対策
-    if isinstance(file_data, memoryview):
-        file_data = file_data.tobytes()
-
-    if not isinstance(file_data, (bytes, bytearray)):
-        raise HTTPException(status_code=500, detail="Invalid file data")
-
-    return Response(
-        content=file_data,
-        media_type="application/octet-stream",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"
-        }
-    )
 
 # 属性一覧取得
 @app.get("/attributes/{data_id}")
