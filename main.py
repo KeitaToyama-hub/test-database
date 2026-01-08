@@ -55,18 +55,32 @@ async def upload_file(
 
 # ファイルダウンロード
 @app.get("/download/{data_id}")
-def download_file(data_id: int):
+def view_file(data_id: int):
+    # DBから取得
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT filename, file_data FROM marketplace_data WHERE id=?", (data_id,))
     row = c.fetchone()
     conn.close()
-    if not row:
-        return JSONResponse(status_code=404, content={"error": "File not found"})
-    filename, file_data = row
-    return StreamingResponse(BytesIO(file_data), media_type="application/octet-stream",
-                             headers={"Content-Disposition": f"attachment; filename={filename}"})
 
+    if not row:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    filename, file_data = row
+
+    # memoryview → bytes に変換
+    if isinstance(file_data, memoryview):
+        file_data = file_data.tobytes()
+
+    # MIMEタイプを拡張子から推測
+    mime_type, _ = mimetypes.guess_type(filename)
+    media_type = mime_type or "application/octet-stream"
+
+    # Content-Disposition は付けない → ブラウザで表示
+    return Response(
+        content=file_data,
+        media_type=media_type
+    )
 
 
 # 属性一覧取得
