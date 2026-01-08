@@ -5,6 +5,7 @@ import sqlite3
 import os
 from io import BytesIO
 import urllib.parse
+import mimetypes
 
 app = FastAPI()
 DB_FILE = "data.db"
