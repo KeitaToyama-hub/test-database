@@ -57,7 +57,6 @@ async def upload_file(
 # ファイルダウンロード
 @app.get("/download/{data_id}")
 def view_file(data_id: int):
-    # DBから取得
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT filename, file_data FROM marketplace_data WHERE id=?", (data_id,))
@@ -68,20 +67,14 @@ def view_file(data_id: int):
         raise HTTPException(status_code=404, detail="File not found")
 
     filename, file_data = row
-
-    # memoryview → bytes に変換
     if isinstance(file_data, memoryview):
         file_data = file_data.tobytes()
 
-    # MIMEタイプを拡張子から推測
     mime_type, _ = mimetypes.guess_type(filename)
-    media_type = mime_type or "application/octet-stream"
+    if not mime_type:
+        mime_type = "text/plain"  # ← ここがポイント
 
-    # Content-Disposition は付けない → ブラウザで表示
-    return Response(
-        content=file_data,
-        media_type=media_type
-    )
+    return Response(content=file_data, media_type=mime_type)
 
 
 # 属性一覧取得
