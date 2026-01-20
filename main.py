@@ -73,8 +73,12 @@ def view_file(data_id: int):
     mime_type, _ = mimetypes.guess_type(filename)
     if not mime_type:
         mime_type = "text/plain"  # ← ここがポイント
-
-    return Response(content=file_data, media_type=mime_type)
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"'
+    }
+    
+    return Response(content=file_data, media_type=mime_type, headers=headers)
+    )
 
 
 # 属性一覧取得
