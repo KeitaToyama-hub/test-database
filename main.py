@@ -79,7 +79,6 @@ def view_file(data_id: int):
     }
     
     return Response(content=file_data, media_type=mime_type, headers=headers)
-    )
 
 
 # 属性一覧取得
