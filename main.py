@@ -58,28 +58,28 @@ async def upload_file(
 @app.get("/download/{data_id}")
 def view_file(data_id: int):
     try:
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT filename, file_data FROM marketplace_data WHERE id=?", (data_id,))
-    row = c.fetchone()
-    conn.close()
-
-    if not row:
-        raise HTTPException(status_code=404, detail="File not found")
-
-    filename, file_data = row
-    if isinstance(file_data, memoryview):
-        file_data = file_data.tobytes()
-
-    mime_type, _ = mimetypes.guess_type(filename)
-    if not mime_type:
-        mime_type = "text/plain"  # ← ここがポイント
-    download_filename = f"[{data_id}] {filename}"
-    headers = {
-        "Content-Disposition": f'attachment; filename="{download_filename}"'
-    }
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("SELECT filename, file_data FROM marketplace_data WHERE id=?", (data_id,))
+        row = c.fetchone()
+        conn.close()
     
-    return Response(content=file_data, media_type=mime_type, headers=headers)
+        if not row:
+            raise HTTPException(status_code=404, detail="File not found")
+    
+        filename, file_data = row
+        if isinstance(file_data, memoryview):
+            file_data = file_data.tobytes()
+    
+        mime_type, _ = mimetypes.guess_type(filename)
+        if not mime_type:
+            mime_type = "text/plain"  # ← ここがポイント
+        download_filename = f"[{data_id}] {filename}"
+        headers = {
+            "Content-Disposition": f'attachment; filename="{download_filename}"'
+        }
+        
+        return Response(content=file_data, media_type=mime_type, headers=headers)
     except Exception as e:
         import traceback
         print(traceback.format_exc())  # 詳細なエラーをサーバーログに出す
