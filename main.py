@@ -57,6 +57,7 @@ async def upload_file(
 # ファイルダウンロード
 @app.get("/download/{data_id}")
 def view_file(data_id: int):
+    try:
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT filename, file_data FROM marketplace_data WHERE id=?", (data_id,))
@@ -79,6 +80,10 @@ def view_file(data_id: int):
     }
     
     return Response(content=file_data, media_type=mime_type, headers=headers)
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())  # 詳細なエラーをサーバーログに出す
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # 属性一覧取得
