@@ -10,7 +10,6 @@ import mimetypes
 app = FastAPI()
 DB_FILE = "data.db"
 
-# CORS 設定（任意）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# DB初期化
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -36,11 +34,10 @@ def init_db():
 
 init_db()
 
-# ファイルアップロード＋属性保存
 @app.post("/upload/")
 async def upload_file(
     file: UploadFile = File(...),
-    attributes: str = Form("{}")  # JSON文字列
+    attributes: str = Form("{}")  
 ):
     file_content = await file.read()
     conn = sqlite3.connect(DB_FILE)
@@ -54,7 +51,6 @@ async def upload_file(
     conn.close()
     return {"id": new_id, "message": "File uploaded successfully"}
 
-# ファイルダウンロード
 @app.get("/download/{data_id}")
 def view_file(data_id: int):
     try:
@@ -70,11 +66,14 @@ def view_file(data_id: int):
         filename, file_data = row
         if isinstance(file_data, memoryview):
             file_data = file_data.tobytes()
-    
-        mime_type, _ = mimetypes.guess_type(filename)
+        base_filename = os.path.basename(filename)
+        mime_type, _ = mimetypes.guess_type(base_filename)
         if not mime_type:
-            mime_type = "text/plain"  # ← ここがポイント
-        download_filename = f"[{data_id}_{filename}"
+            mime_type = "text/plain" 
+        name_parts = base_filename.split("_", 1)
+        clean_filename = name_parts[1] if len(name_parts) == 2 else base_filename
+
+        download_filename = f"[{data_id}_{clean_filename}"
         headers = {
             "Content-Disposition": f'attachment; filename="{download_filename}"'
         }
@@ -82,11 +81,10 @@ def view_file(data_id: int):
         return Response(content=file_data, media_type=mime_type, headers=headers)
     except Exception as e:
         import traceback
-        print(traceback.format_exc())  # 詳細なエラーをサーバーログに出す
+        print(traceback.format_exc()) 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 属性一覧取得
 @app.get("/attributes/{data_id}")
 def get_attributes(data_id: int):
     conn = sqlite3.connect(DB_FILE)
@@ -98,7 +96,6 @@ def get_attributes(data_id: int):
         return JSONResponse(status_code=404, content={"error": "Data not found"})
     return JSONResponse(content={"attributes": row[0]})
 
-# ファイル一覧取得
 @app.get("/files/")
 def list_files():
     conn = sqlite3.connect(DB_FILE)
@@ -108,7 +105,6 @@ def list_files():
     conn.close()
     return [{"id": r[0], "filename": r[1], "upload_time": r[2]} for r in rows]
 
-# Railway / Heroku 用に PORT を環境変数から取得
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
