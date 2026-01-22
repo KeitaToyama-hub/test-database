@@ -79,6 +79,9 @@ def view_file(data_id: int):
         }
         
         return Response(content=file_data, media_type=mime_type, headers=headers)
+    except HTTPException:
+        raise
+
     except Exception as e:
         import traceback
         print(traceback.format_exc()) 
