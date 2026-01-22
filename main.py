@@ -73,7 +73,9 @@ def view_file(data_id: int):
         name_parts = base_filename.split("_", 1)
         clean_filename = name_parts[1] if len(name_parts) == 2 else base_filename
 
-        download_filename = f"[{data_id}_{clean_filename}"
+        download_filename = f"{data_id}_{clean_filename}"
+        download_filename = download_filename.replace('"', '')
+
         headers = {
             "Content-Disposition": f'attachment; filename="{download_filename}"'
         }
