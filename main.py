@@ -70,9 +70,10 @@ def view_file(data_id: int):
         mime_type, _ = mimetypes.guess_type(base_filename)
         if not mime_type:
             mime_type = "text/plain" 
+        print(base_filename)
         name_parts = base_filename.split("_", 1)
         clean_filename = name_parts[1] if len(name_parts) >= 2 else base_filename
-
+        print(clean_filename)
         download_filename = f"{data_id}_{clean_filename}"
         download_filename = download_filename.replace('"', '')
 
