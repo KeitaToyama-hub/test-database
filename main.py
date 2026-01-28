@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, Response, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, Response, HTTPException, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
@@ -17,6 +17,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+API_KEY_RETRIEVE = "mysecretkey" 
+API_KEY_MINE = "mysecretkey" 
+
+def get_api_key(API_KEY: str):
+    def dependency(x_api_key: str = Header(...)):
+        if x_api_key != API_KEY:
+            raise HTTPException(status_code=401, detail="Invalid API Key")
+        return x_api_key
+    return dependency
+    
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -37,7 +47,8 @@ init_db()
 @app.post("/upload/")
 async def upload_file(
     file: UploadFile = File(...),
-    attributes: str = Form("{}")  
+    attributes: str = Form("{}"),
+    api_key: str = Depends(get_api_key(API_KEY_MINE))
 ):
     file_content = await file.read()
     conn = sqlite3.connect(DB_FILE)
@@ -52,7 +63,7 @@ async def upload_file(
     return {"id": new_id, "message": "File uploaded successfully"}
 
 @app.get("/download/{data_id}")
-def view_file(data_id: int):
+def view_file(data_id: int, api_key: str = Depends(get_api_key(API_KEY_RETRIEVE))):
     try:
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
@@ -88,7 +99,7 @@ def view_file(data_id: int):
 
 
 @app.get("/attributes/{data_id}")
-def get_attributes(data_id: int):
+def get_attributes(data_id: int, api_key: str = Depends(get_api_key(API_KEY_MINE))):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT attributes FROM marketplace_data WHERE id=?", (data_id,))
@@ -99,7 +110,7 @@ def get_attributes(data_id: int):
     return JSONResponse(content={"attributes": row[0]})
 
 @app.get("/files/")
-def list_files():
+def list_files(api_key: str = Depends(get_api_key(API_KEY_MINE)):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT id, filename, upload_time FROM marketplace_data ORDER BY upload_time DESC")
