@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, Response, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, Form, Response, HTTPException, Depends, Header
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
@@ -110,7 +110,7 @@ def get_attributes(data_id: int, api_key: str = Depends(get_api_key(API_KEY_MINE
     return JSONResponse(content={"attributes": row[0]})
 
 @app.get("/files/")
-def list_files(api_key: str = Depends(get_api_key(API_KEY_MINE)):
+def list_files(api_key: str = Depends(get_api_key(API_KEY_MINE))):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT id, filename, upload_time FROM marketplace_data ORDER BY upload_time DESC")
