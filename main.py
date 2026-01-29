@@ -22,10 +22,8 @@ API_KEY_MINE = "mysecretkey"
 
 def get_api_key(API_KEY: str):
     def dependency(x_api_key: str = Header(...)):
-        """ Uncomment!!
         if x_api_key != API_KEY:
             raise HTTPException(status_code=401, detail="Invalid API Key")
-        """
         return x_api_key
     return dependency
     
@@ -49,9 +47,7 @@ init_db()
 @app.post("/upload/")
 async def upload_file(
     file: UploadFile = File(...),
-    attributes: str = Form("{}"),
-    api_key: str = Depends(get_api_key(API_KEY_MINE))
-):
+    attributes: str = Form("{}")):
     file_content = await file.read()
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -65,7 +61,7 @@ async def upload_file(
     return {"id": new_id, "message": "File uploaded successfully"}
 
 @app.get("/download/{data_id}")
-def view_file(data_id: int, api_key: str = Depends(get_api_key(API_KEY_RETRIEVE))):
+def view_file(data_id: int):
     try:
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
@@ -101,7 +97,7 @@ def view_file(data_id: int, api_key: str = Depends(get_api_key(API_KEY_RETRIEVE)
 
 
 @app.get("/attributes/{data_id}")
-def get_attributes(data_id: int, api_key: str = Depends(get_api_key(API_KEY_MINE))):
+def get_attributes(data_id: int):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT attributes FROM marketplace_data WHERE id=?", (data_id,))
@@ -112,7 +108,7 @@ def get_attributes(data_id: int, api_key: str = Depends(get_api_key(API_KEY_MINE
     return JSONResponse(content={"attributes": row[0]})
 
 @app.get("/files/")
-def list_files(api_key: str = Depends(get_api_key(API_KEY_MINE))):
+def list_files():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT id, filename, upload_time FROM marketplace_data ORDER BY upload_time DESC")
